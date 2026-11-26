@@ -205,3 +205,12 @@ publishing {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
+
+tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+    doFirst {
+        copy {
+            from file('src/main/resources/gameteststructures')
+            into file('run/gameteststructures')
+        }
+    }
+}
