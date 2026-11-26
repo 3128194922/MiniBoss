@@ -4,13 +4,11 @@ Rainbow Power 整合包的迷你 Boss 系统，使用 Forge 1.20.1 + Java 实现
 
 ## 功能
 
-- 负幸运攻击按概率把目标转化为迷你 Boss。
-- 血月自然生成通过 KubeJS 薄桥接调用 `MiniBossApi.convert(entity)`。
 - 17 种词条、1~5 级，保留原 KubeJS 的 NBT 键，旧存档与 Jade 显示兼容。
 - 只有真正转化后的 `Mob` 才挂载 AI Goal，不再给所有实体类型挂 8 个 Goal。
 - AI 词条：自愈、援军、领袖、挖掘、隐匿、演化。
 - 事件词条：寄生、适应、自爆、缴械、重装、驱散、暗影、刺客、刚性、狂怒、吸血。
-- 迷你 Boss 额外掉落与 Dyeing 外观（Dyeing 可选）。
+- 为 KubeJS 提供稳定的 `MiniBossApi`：转化、查询词条/等级、增删词条、清除标记。
 - 提供 `/miniboss` 管理命令，便于测试和排障。
 
 ## 环境
@@ -48,8 +46,6 @@ Rainbow Power 整合包的迷你 Boss 系统，使用 Forge 1.20.1 + Java 实现
 ```toml
 entityBlacklist = ["minecraft:villager", "blockedmod:*"]
 powerBlacklist = ["minecraft:creeper=Explode,Evolve", "*=Parasite"]
-enableDyeingArmor = true
-enableExtraLoot = true
 healthMultiplier = 3.0
 maxDraws = 4
 logConversions = false
@@ -59,6 +55,32 @@ logConversions = false
 - `powerBlacklist`：格式 `实体模式=词条1,词条2`；`*` 表示全局禁用。
 - `maxDraws`：转化时最多抽几次，重复词条不会重复添加。
 - 已有存档中的 `isMiniBoss` / `POWER` / `POWER_LEVELS` 不会被重新随机。
+
+## KubeJS API
+
+Java 入口：`com.rainbow.miniboss.api.MiniBossApi`
+
+```js
+const MiniBossApi = Java.loadClass('com.rainbow.miniboss.api.MiniBossApi')
+
+MiniBossApi.convert(entity)                 // 随机词条转化，返回 boolean
+MiniBossApi.isMiniBoss(entity)
+MiniBossApi.hasPower(entity, 'Drain')
+MiniBossApi.getPowerLevel(entity, 'Drain')
+MiniBossApi.getPowers(entity)               // List<String>
+MiniBossApi.addPower(entity, 'Drain', 1)
+MiniBossApi.removePower(entity, 'Drain')
+MiniBossApi.clear(entity)
+```
+
+本项目 KubeJS 侧保留的职责：
+
+- `server_scripts/mini_boss_system/negative_luck.js`：负幸运攻击概率转化。
+- `server_scripts/blood_moon/main.js`：血月自然生成转化。
+- `server_scripts/mini_boss_system/loot.js`：LootJS 额外掉落。
+- `server_scripts/mini_boss_system/bridge.js`：转化成功后执行 Dyeing 外观命令。
+
+mod 不再自动监听负幸运、血月、掉落或 Dyeing。
 
 ## 命令
 
@@ -90,20 +112,22 @@ server_scripts/mini_boss_system/*.js.disabled
 startup_scripts/mini_boss_system/damage.js.disabled
 ```
 
-保留的 KubeJS 文件只有：
+保留的 KubeJS 文件：
 
-- `server_scripts/mini_boss_system/bridge.js`：把 `global.convertToMiniBoss(entity)` 转发到 `MiniBossApi`。
+- `server_scripts/mini_boss_system/bridge.js`：转发 `MiniBossApi`，转化成功后执行 Dyeing 外观。
+- `server_scripts/mini_boss_system/negative_luck.js`：负幸运概率转化。
+- `server_scripts/mini_boss_system/loot.js`：LootJS 额外掉落。
+- `server_scripts/blood_moon/main.js`：血月自然生成转化。
 - `startup_scripts/mini_boss_system/Jade.js`：读取兼容 NBT 并在 Jade 显示词条。
 
-血月脚本已改为调用 `global.convertToMiniBoss(entity)`；负幸运转化、伤害词条、自爆、掉落和 AI 全部由本 mod 处理。
+负幸运、血月、额外掉落和 Dyeing 外观都由 KubeJS 调用 API 完成；伤害词条、自爆和 AI 由本 mod 处理。
 
 ## 兼容性
 
 - 保留 NBT 键：`isMiniBoss`、`POWER`、`POWER_LEVELS`、`_mb_p_*`、`_mb_lvl_*`、`_mb_adapt_types`。
 - 旧存档中的迷你 Boss 会在实体进入世界时自动补挂对应 AI Goal。
 - `fieldguide:bosses` 标签内的实体不会被转化。
-- `dyeing` 可选；未安装时跳过外观命令。
-- 不硬依赖 Jade、KubeJS、Curios 或 Dyeing。
+- 不硬依赖 Jade、KubeJS、Curios 或 Dyeing；Dyeing 由 KubeJS 桥接可选执行。
 - 不修改客户端渲染；Jade 文本仍由 KubeJS 提供。
 
 ## 构建
@@ -128,11 +152,12 @@ $env:JAVA_HOME='C:\Program Files\Java\jdk-17'
 | `convertsZombie` | 僵尸可转化、写入标记、抽到词条、生命生效 | 通过 |
 | `refusesDoubleConversion` | 同一实体不会重复转化 | 通过 |
 | `writesLegacyKubeJsKeys` | `isMiniBoss` / `POWER` / `POWER_LEVELS` 兼容旧 KubeJS | 通过 |
+| `apiCanAddAndRemovePower` | JS API 可增删词条 | 通过 |
 
 验证边界：
 
 - `gradlew build` 通过。
-- `runGameTestServer` 3 个测试通过。
+- `runGameTestServer` 4 个测试通过。
 - 完整 Rainbow Power 整合包冒烟被既有 `caverns_and_chasms` 的 `Deeper.createAttributes()` `NoSuchMethodError` 阻断，该错误与本 mod 无关；MiniBoss 在崩溃前已成功加载。
 - 尚未进行多人、长时战斗、所有 17 词条逐项实机验收。
 
@@ -144,8 +169,7 @@ src/main/java/com/rainbow/miniboss/
   data/MiniBossData.java        NBT 兼容读写
   logic/MiniBossConversion.java 转化、黑名单、词条抽取
   logic/MiniBossGoals.java      AI Goal
-  logic/MiniBossEvents.java     伤害/死亡/掉落/加入世界事件
-  logic/MiniBossLoot.java       额外掉落
+  logic/MiniBossEvents.java     伤害/死亡/加入世界事件
   logic/MiniBossCommands.java   /miniboss 命令
   power/MiniBossPower.java      词条枚举
 ```

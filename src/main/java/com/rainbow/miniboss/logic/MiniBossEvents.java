@@ -1,7 +1,6 @@
 package com.rainbow.miniboss.logic;
 
 import com.rainbow.miniboss.MiniBoss;
-import com.rainbow.miniboss.MiniBossConfig;
 import com.rainbow.miniboss.data.MiniBossData;
 import com.rainbow.miniboss.power.MiniBossPower;
 import net.minecraft.server.level.ServerLevel;
@@ -17,8 +16,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.TamableAnimal;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Silverfish;
 import net.minecraft.world.entity.player.Player;
@@ -28,7 +25,6 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -49,7 +45,6 @@ public final class MiniBossEvents {
 
         var source = event.getSource();
         LivingEntity attacker = source.getEntity() instanceof LivingEntity living ? living : null;
-        applyNegativeLuckConversion(victim, attacker);
 
         float amount = event.getAmount();
         if (amount <= 0.0F) return;
@@ -131,24 +126,8 @@ public final class MiniBossEvents {
     }
 
     @SubscribeEvent
-    public static void onLivingDrops(LivingDropsEvent event) {
-        if (!MiniBossConfig.extraLoot()) return;
-        LivingEntity entity = event.getEntity();
-        if (MiniBossData.isMiniBoss(entity)) MiniBossLoot.addDrops(event, entity);
-    }
-
-    @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         MiniBossCommands.register(event.getDispatcher());
-    }
-
-    private static void applyNegativeLuckConversion(LivingEntity victim, LivingEntity attacker) {
-        if (!(attacker instanceof Player player) || victim instanceof TamableAnimal) return;
-        double luck = player.getAttributeValue(Attributes.LUCK);
-        if (luck >= 0.0D) return;
-        if (player.getRandom().nextDouble() < Math.abs(luck) / 100.0D) {
-            MiniBossConversion.convert(victim);
-        }
     }
 
     private static int lightLevel(LivingEntity entity) {

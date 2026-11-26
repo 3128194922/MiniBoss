@@ -15,14 +15,6 @@ public final class MiniBossConfig {
             .comment("Power blacklist entries: 'entityPattern=Power1,Power2' or '*=Power'. Example: 'minecraft:creeper=Explode,Evolve'.")
             .defineListAllowEmpty("powerBlacklist", List.of(), MiniBossConfig::isString);
 
-    private static final ForgeConfigSpec.BooleanValue ENABLE_DYEING_ARMOR = BUILDER
-            .comment("Apply the Rainbow Power Dyeing armor overlay when the dyeing mod is installed.")
-            .define("enableDyeingArmor", true);
-
-    private static final ForgeConfigSpec.BooleanValue ENABLE_EXTRA_LOOT = BUILDER
-            .comment("Add the mini-boss bonus loot table through LivingDropsEvent.")
-            .define("enableExtraLoot", true);
-
     private static final ForgeConfigSpec.DoubleValue HEALTH_MULTIPLIER = BUILDER
             .comment("Base max-health multiplier applied once at conversion.")
             .defineInRange("healthMultiplier", 3.0D, 1.0D, 20.0D);
@@ -50,14 +42,6 @@ public final class MiniBossConfig {
 
     public static List<String> powerBlacklist() {
         return POWER_BLACKLIST.get().stream().map(String::valueOf).toList();
-    }
-
-    public static boolean dyeingArmor() {
-        return ENABLE_DYEING_ARMOR.get();
-    }
-
-    public static boolean extraLoot() {
-        return ENABLE_EXTRA_LOOT.get();
     }
 
     public static double healthMultiplier() {

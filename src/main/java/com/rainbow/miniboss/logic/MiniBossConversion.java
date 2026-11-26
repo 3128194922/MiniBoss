@@ -19,7 +19,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Skeleton;
 import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
@@ -79,7 +78,6 @@ public final class MiniBossConversion {
             entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, -1, 1, false, false));
         }
 
-        if (MiniBossConfig.dyeingArmor()) applyDyeingArmor(entity);
         if (entity instanceof Mob mob) MiniBossGoals.attach(mob);
 
         if (MiniBossConfig.logConversions()) {
@@ -140,15 +138,4 @@ public final class MiniBossConversion {
         return pattern.endsWith(":*") && id.startsWith(pattern.substring(0, pattern.length() - 1));
     }
 
-    private static void applyDyeingArmor(LivingEntity entity) {
-        if (!ModList.get().isLoaded("dyeing")) return;
-        try {
-            entity.getServer().getCommands().performPrefixedCommand(
-                    entity.createCommandSourceStack().withSuppressedOutput(),
-                    "dyeing uv add scroll mini_boss_creeper_armor " + entity.getUUID()
-                            + " rainbow:textures/miniboss/miniboss_armor.png 0.01 0.01 1");
-        } catch (RuntimeException exception) {
-            MiniBoss.LOGGER.warn("Failed to apply Dyeing mini-boss armor to {}", entity.getUUID(), exception);
-        }
-    }
 }
