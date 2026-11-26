@@ -13,7 +13,11 @@ public final class MiniBoss {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public MiniBoss(FMLJavaModLoadingContext context) {
-        GameTestRegistry.register(MiniBossGameTests.class);
+        // GameTestRegistry 只在 GameTest server 的命名空间属性存在时可用；
+        // 普通客户端直接调用会触发 ArrayList 未初始化异常。
+        if (System.getProperty("forge.enabledGameTestNamespaces") != null) {
+            GameTestRegistry.register(MiniBossGameTests.class);
+        }
         context.registerConfig(ModConfig.Type.COMMON, MiniBossConfig.SPEC);
         LOGGER.info("MiniBoss loaded");
     }
